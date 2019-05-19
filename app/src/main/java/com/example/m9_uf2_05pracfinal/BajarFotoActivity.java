@@ -3,7 +3,9 @@ package com.example.m9_uf2_05pracfinal;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -22,7 +24,7 @@ import java.security.NoSuchAlgorithmException;
 public class BajarFotoActivity extends AppCompatActivity {
 
     private String urlFichero;
-    private ProgressBar progressBar;
+    public static ProgressBar progressBar;
     private ImageView imageView;
     private Button btnSalir;
     Conexion conexion;
@@ -44,7 +46,7 @@ public class BajarFotoActivity extends AppCompatActivity {
 
         if (Conexion.passCorrect) {
             Conexion.nombreFichero = urlFichero;
-            new ThreadBarraProgreso().run();
+            //new ThreadBarraProgreso().run();
 
             conexion = new Conexion(31, new ThreadBajarFoto(), BajarFotoActivity.this);
         } else {
@@ -53,104 +55,22 @@ public class BajarFotoActivity extends AppCompatActivity {
 
     }
 
-    class ThreadBarraProgreso implements Runnable{
-
-        @Override
-        public void run() {
-            progressBar.post(new Runnable() {
-                @Override
-                public void run() {
-
-                        while(Conexion.progresoPorcentaje < 100){
-                            progressBar.setProgress(Conexion.progresoPorcentaje);
-                            try {
-                                Thread.sleep(500);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                }
-            });
-        }
-    }
-
-
     class ThreadBajarFoto implements Runnable {
         @Override
-        public void run() {/*
-            BufferedOutputStream bo = null;
-            File fi = null;
-            MessageDigest md = null;
-            try {
-                try {
-                    md = MessageDigest.getInstance("MD5");
-                } catch (NoSuchAlgorithmException ex) {
-
-                }
-
-                conexion.escribe().writeUTF(urlFichero);
-
-                String nombreFichero = conexion.lee().readUTF();
-                long longFichero = conexion.lee().readLong();
-                int blocFichero = conexion.lee().readInt();
-
-                fi = new File(nombreFichero);
-                bo = new BufferedOutputStream(new FileOutputStream(fi));
-
-                long veces = longFichero / blocFichero;
-                int resta = (int) (longFichero % blocFichero);
-
-                byte b[] = new byte[blocFichero];
-
-                for (long i = 0; i < veces; i++) {
-                    conexion.lee().read(b); // enviamos lo leído
-                    bo.write(b);
-                    md.update(b);
-
-                    final int numBarra = (int) ((100 * i) / veces);
-
-                    progressBar.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            progressBar.setProgress(numBarra);
-                        }
-                    });
-
-                }
-                //envia el resto del fichero
-                if (resta > 0) {
-                    conexion.lee().read(b, 0, resta); // enviamos el resto del fichero
-                    bo.write(b, 0, resta); // lee el resto del fichero en b
-                    md.update(b, 0, resta);
-                }
-                //Verificación del archivo en MD5
-                String md5 = conexion.lee().readUTF();
-
-                bo.close();
-
-                if (md5.equals(conexion.toHex(md.digest()))) {
-                    File imgFile = new File(nombreFichero);
-
-                    Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
-                    imageView.setImageBitmap(myBitmap);
-                } else {
-                    Toast.makeText(BajarFotoActivity.this, "Error en baixar el fitxer", Toast.LENGTH_LONG).show();
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }*/
+        public void run() {
 
             if (conexion.ficheroCorrecto) {
-                File imgFile = new File(conexion.nombreFichero);
+                File imgFile = new File(conexion.dirFichero);
 
                 Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+                //Bitmap myBitmap = BitmapFactory.decodeFile(getFilesDir() + "/"+imgFile.toString());
+                Log.d("Conexion", imgFile.toString());
+                Log.d("Conexion", imgFile.getAbsolutePath());
+
                 imageView.setImageBitmap(myBitmap);
             } else {
                 Toast.makeText(BajarFotoActivity.this, "Error en baixar el fitxer", Toast.LENGTH_LONG).show();
             }
-
-
         }
     }
 

@@ -92,7 +92,7 @@ public class SettingPortActvity extends DialogFragment {
         btnAcept.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ConexionConfig.setPortIP(edtIP.getText().toString(),Integer.parseInt(edtPuerto.getText().toString()));
+                ConexionConfig.setPortIP(edtIP.getText().toString().replace(" ", ""),Integer.parseInt(edtPuerto.getText().toString()));
                 closeFragment();
             }
         });

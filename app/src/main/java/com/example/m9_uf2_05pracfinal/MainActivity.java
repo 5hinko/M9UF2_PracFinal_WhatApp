@@ -1,6 +1,8 @@
 package com.example.m9_uf2_05pracfinal;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
@@ -31,6 +33,17 @@ public class MainActivity extends AppCompatActivity {
         btnConn = findViewById(R.id.btnConnect);
         btnConf = findViewById(R.id.btn_config);
 
+        SharedPreferences prefs = getSharedPreferences("Config", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("usuario", "1");
+        editor.putString("contra", "pass");
+        editor.commit();
+
+        String strUsuario = prefs.getString("usuario," ,"1");
+        String strPass = prefs.getString("contra", "pass");
+
+        user.setText(strUsuario);
+        password.setText(strPass);
     }
 
     private void btnEnable(boolean bolo) {

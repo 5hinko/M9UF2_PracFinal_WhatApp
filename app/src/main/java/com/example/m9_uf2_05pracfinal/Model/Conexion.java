@@ -1,18 +1,29 @@
 package com.example.m9_uf2_05pracfinal.Model;
 
 import android.app.Activity;
+import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.widget.Toast;
 
+import com.example.m9_uf2_05pracfinal.BajarFotoActivity;
+
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+
+;
 
 public class Conexion {
 
@@ -23,6 +34,7 @@ public class Conexion {
     public Boolean errorEnviarMensaje;
     public List<String> listNomFichero;
     public static String nombreFichero;
+    public String dirFichero;
     public boolean ficheroCorrecto;
     public static int progresoPorcentaje = 0;
     public Object ficheroDatos;
@@ -151,6 +163,8 @@ public class Conexion {
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
             }
         }
 
@@ -191,61 +205,104 @@ public class Conexion {
             }
         }
 
-        private void FicheroPedir() throws IOException {
+        private void FicheroPedir() throws NoSuchAlgorithmException{
 
-            BufferedOutputStream bo = null;
+            BufferedInputStream inputStream =  new BufferedInputStream(dis);
+            OutputStream bo = null;
+            //BufferedOutputStream bo = null;
             File fi = null;
             MessageDigest md = null;
+            String md5 = "";
+            String md5Combinacion = "1";
 
             try {
                 md = MessageDigest.getInstance("MD5");
-            } catch (NoSuchAlgorithmException ex) {
+                dos.writeUTF(nombreFichero);
 
+                String nombreFichero = dis.readUTF();
+                long longFichero = 0;
+                longFichero = dis.readLong();
+
+                int blocFichero = dis.readInt();
+
+                fi = new File(act.getFilesDir() + "/"+ nombreFichero);
+
+                if (fi.exists()) {
+                    fi.delete();
+                }
+
+                //bo = act.openFileOutput(fi.getAbsolutePath(), Context.MODE_APPEND);
+                bo = new BufferedOutputStream(new FileOutputStream(fi));
+
+                long veces = longFichero / blocFichero;
+                int resta = (int) (longFichero % blocFichero);
+
+                byte b[] = new byte[blocFichero];
+
+                for (long i = 0; i < veces; i++) {
+                    dis.read(b); // enviamos lo leído
+                    bo.write(b);
+                    md.update(b);
+
+                    final int numBarra = (int) ((100 * i) / veces);
+
+                    /////////
+                    Message msg = new Message();
+                    msg.what = 1;
+                    msg.arg1 = numBarra;
+                    vistaHandler.sendMessage(msg);
+                   // progresoPorcentaje = numBarra;
+
+                }
+                //envia el resto del fichero
+                if (resta > 0) {
+                    dis.read(b, 0, resta); // enviamos el resto del fichero
+                    bo.write(b, 0, resta); // lee el resto del fichero en b
+                    md.update(b, 0, resta);
+                }
+                //Verificación del archivo en MD5
+                md5Combinacion = toHex(md.digest());
+                md5 = dis.readUTF();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }finally {
+                if(bo!= null){
+                    try {
+                        bo.close();
+                    } catch (IOException e) {
+                    }
+                }
+                Log.d("Conexion", md5Combinacion);
+                Log.d("Conexion", md5);
             }
-
-            dos.writeUTF(nombreFichero);
-
-            String nombreFichero = dis.readUTF();
-            long longFichero = dis.readLong();
-            int blocFichero = dis.readInt();
-
-            fi = new File(nombreFichero);
-            bo = new BufferedOutputStream(new FileOutputStream(fi));
-
-            long veces = longFichero / blocFichero;
-            int resta = (int) (longFichero % blocFichero);
-
-            byte b[] = new byte[blocFichero];
-
-            for (long i = 0; i < veces; i++) {
-                dis.read(b); // enviamos lo leído
-                bo.write(b);
-                md.update(b);
-
-                final int numBarra = (int) ((100 * i) / veces);
-
-                /////////
-                    progresoPorcentaje = numBarra;
-
-            }
-            //envia el resto del fichero
-            if (resta > 0) {
-                dis.read(b, 0, resta); // enviamos el resto del fichero
-                bo.write(b, 0, resta); // lee el resto del fichero en b
-                md.update(b, 0, resta);
-            }
-            //Verificación del archivo en MD5
-            String md5 = dis.readUTF();
-
-            bo.close();
-
-            if (md5.equals(toHex(md.digest()))) {
+            if (md5.equals(md5Combinacion)) {
                 ficheroCorrecto = true;
+                dirFichero = fi.toString();
+
+                Message msg = new Message();
+                msg.what = 1;
+                msg.arg1 = 100;
+                vistaHandler.sendMessage(msg);
+
             } else {
                 ficheroCorrecto = false;
             }
         }
     }
+
+
+    Handler vistaHandler = new Handler() {
+
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case 1:
+                    BajarFotoActivity.progressBar.setProgress(msg.arg1);
+                    break;
+            } //fin switch
+            super.handleMessage(msg);
+        } //fin HandleMessage
+    };
 
     public static boolean conexionContinua() {
         return passCorrect;
